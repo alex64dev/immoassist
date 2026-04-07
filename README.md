@@ -10,13 +10,13 @@ Générateur d'annonces immobilières propulsé par l'IA. Renseignez les caract�
 | Frontend   | React (ou Vue) · Vite · Tailwind CSS    |
 | Base       | PostgreSQL 16                            |
 | Temps réel | Mercure (SSE)                            |
-| IA         | API Anthropic (Claude)                   |
+| IA         | API Google Gemini                        |
 | Infra      | Docker Compose · GitHub Actions CI/CD    |
 
 ## Prérequis
 
 - Docker et Docker Compose
-- Une clé API Anthropic ([console.anthropic.com](https://console.anthropic.com/))
+- Une clé API Google Gemini ([aistudio.google.com/apikey](https://aistudio.google.com/apikey))
 
 ## Installation
 
@@ -27,7 +27,7 @@ cd immoassist
 
 # 2. Configurer les variables d'environnement
 cp .env.example .env
-# Éditez .env avec votre clé API Anthropic
+# Éditez .env avec votre clé API Gemini
 
 # 3. Lancer le projet
 make install
@@ -61,7 +61,7 @@ make db-diff        # Générer une migration
 POST /api/annonces
   → Controller reçoit les données du bien
   → Service construit le prompt avec le ton choisi
-  → Appel streaming à l'API Claude (anthropic-php)
+  → Appel streaming à l'API Gemini
   → Chaque token est publié sur Mercure
   → Le frontend souscrit au topic et affiche en temps réel
   → L'annonce complète est sauvegardée en base
