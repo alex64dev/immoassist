@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
@@ -9,6 +11,7 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use App\Repository\AnnonceRepository;
 use App\State\AnnonceProcessor;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -26,7 +29,7 @@ class Annonce
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private ?int $id = null;
+    private ?int $id = null; // @phpstan-ignore property.unusedType
 
     #[ORM\Column(length: 50)]
     private ?string $type = null;
@@ -43,6 +46,7 @@ class Annonce
     #[ORM\Column(length: 255)]
     private ?string $localisation = null;
 
+    /** @var list<string> */
     #[ORM\Column]
     private array $pointsForts = [];
 
@@ -53,7 +57,7 @@ class Annonce
     private ?string $contenu = null;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
+    private ?DateTimeImmutable $createdAt = null;
 
     public function getId(): ?int
     {
@@ -120,11 +124,17 @@ class Annonce
         return $this;
     }
 
+    /**
+     * @return list<string>
+     */
     public function getPointsForts(): array
     {
         return $this->pointsForts;
     }
 
+    /**
+     * @param list<string> $pointsForts
+     */
     public function setPointsForts(array $pointsForts): static
     {
         $this->pointsForts = $pointsForts;
@@ -156,12 +166,12 @@ class Annonce
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    public function setCreatedAt(DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
 

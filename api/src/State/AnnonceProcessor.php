@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\Annonce;
 use App\Service\GeminiService;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -23,10 +24,8 @@ class AnnonceProcessor implements ProcessorInterface
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Annonce
     {
-        \assert($data instanceof Annonce);
-
         $data->setContenu($this->geminiService->generateAnnonce($data));
-        $data->setCreatedAt(new \DateTimeImmutable());
+        $data->setCreatedAt(new DateTimeImmutable());
 
         $this->em->persist($data);
         $this->em->flush();
