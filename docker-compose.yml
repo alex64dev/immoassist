@@ -1,0 +1,107 @@
+services:
+  # ──────────────────────────────────────────────
+  # PHP 8.3 — Symfony 7 + API Platform
+  # ──────────────────────────────────────────────
+  php:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: immoassist-php
+    volumes:
+      - ./api:/var/www/api
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+    environment:
+      APP_ENV: dev
+      APP_SECRET: ${APP_SECRET:-changeme_in_env_file}
+      DATABASE_URL: postgresql://immoassist:immoassist@db:5432/immoassist?serverVersion=16
+      MERCURE_URL: http://mercure/.well-known/mercure
+      MERCURE_PUBLIC_URL: http://localhost:3001/.well-known/mercure
+      MERCURE_JWT_SECRET: ${MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - immoassist
+
+  # ──────────────────────────────────────────────
+  # Nginx — reverse proxy
+  # ──────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: immoassist-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./api/public:/var/www/api/public:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php
+    networks:
+      - immoassist
+
+  # ──────────────────────────────────────────────
+  # PostgreSQL 16
+  # ──────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: immoassist-db
+    environment:
+      POSTGRES_DB: immoassist
+      POSTGRES_USER: immoassist
+      POSTGRES_PASSWORD: immoassist
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U immoassist"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - immoassist
+
+  # ──────────────────────────────────────────────
+  # Mercure Hub — streaming temps réel (SSE)
+  # ──────────────────────────────────────────────
+  mercure:
+    image: dunglas/mercure:v0.16
+    container_name: immoassist-mercure
+    ports:
+      - "3001:80"
+    environment:
+      SERVER_NAME: ":80"
+      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      MERCURE_EXTRA_DIRECTIVES: |
+        cors_origins http://localhost:5173
+        anonymous
+    networks:
+      - immoassist
+
+  # ──────────────────────────────────────────────
+  # Frontend — React ou Vue avec Vite
+  # ──────────────────────────────────────────────
+  front:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    container_name: immoassist-front
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./front:/app
+      - /app/node_modules
+    environment:
+      VITE_API_URL: http://localhost:8080/api
+      VITE_MERCURE_URL: http://localhost:3001/.well-known/mercure
+    networks:
+      - immoassist
+
+volumes:
+  db_data:
+
+networks:
+  immoassist:
+    driver: bridge
