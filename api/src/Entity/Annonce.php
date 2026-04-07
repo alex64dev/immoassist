@@ -29,7 +29,7 @@ class Annonce
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private ?int $id = null;
+    private ?int $id = null; // @phpstan-ignore property.unusedType
 
     #[ORM\Column(length: 50)]
     private ?string $type = null;
@@ -46,6 +46,7 @@ class Annonce
     #[ORM\Column(length: 255)]
     private ?string $localisation = null;
 
+    /** @var list<string> */
     #[ORM\Column]
     private array $pointsForts = [];
 
@@ -123,11 +124,17 @@ class Annonce
         return $this;
     }
 
+    /**
+     * @return list<string>
+     */
     public function getPointsForts(): array
     {
         return $this->pointsForts;
     }
 
+    /**
+     * @param list<string> $pointsForts
+     */
     public function setPointsForts(array $pointsForts): static
     {
         $this->pointsForts = $pointsForts;
