@@ -32,7 +32,10 @@ class GeminiService
                 ],
                 'generationConfig' => [
                     'temperature' => 0.8,
-                    'maxOutputTokens' => 800,
+                    'maxOutputTokens' => 1024,
+                    'thinkingConfig' => [
+                        'thinkingBudget' => 0,
+                    ],
                 ],
             ],
         ]);
