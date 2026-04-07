@@ -32,5 +32,9 @@ docker-compose.override.yml
 # ──────────────────────────────────────────────
 # Environnement
 # ──────────────────────────────────────────────
-.env
-!.env.example
+# .env racine (contient ANTHROPIC_API_KEY)
+/.env
+!/.env.example
+# Symfony : .env est commité (defaults), .env.local contient les secrets
+/api/.env.local
+/api/.env.*.local
