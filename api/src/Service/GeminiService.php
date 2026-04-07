@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Annonce;
+
+use function sprintf;
+
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class GeminiService
@@ -49,10 +52,10 @@ class GeminiService
     {
         $tonInstructions = match ($annonce->getTon()) {
             'luxe' => "Adopte un ton premium, sophistiqué, mettant en avant le prestige et l'exclusivité.",
-            'familial' => "Adopte un ton chaleureux et rassurant, parle aux familles avec enfants.",
-            'investisseur' => "Adopte un ton factuel et orienté rentabilité, mets en avant le potentiel locatif et financier.",
-            'etudiant' => "Adopte un ton dynamique et accessible, mets en avant la praticité et le rapport qualité-prix.",
-            default => "Adopte un ton professionnel et engageant.",
+            'familial' => 'Adopte un ton chaleureux et rassurant, parle aux familles avec enfants.',
+            'investisseur' => 'Adopte un ton factuel et orienté rentabilité, mets en avant le potentiel locatif et financier.',
+            'etudiant' => 'Adopte un ton dynamique et accessible, mets en avant la praticité et le rapport qualité-prix.',
+            default => 'Adopte un ton professionnel et engageant.',
         };
 
         $pointsForts = implode(', ', $annonce->getPointsForts());
