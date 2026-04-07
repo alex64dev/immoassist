@@ -38,8 +38,8 @@ L'application est accessible sur :
 | Service  | URL                                              |
 |----------|--------------------------------------------------|
 | Frontend | [localhost:5173](http://localhost:5173)           |
-| API      | [localhost:8080/api](http://localhost:8080/api)   |
-| Mercure  | [localhost:3001](http://localhost:3001)           |
+| API      | [localhost:8088/api](http://localhost:8088/api)   |
+| Mercure  | [localhost:3002](http://localhost:3002)           |
 
 ## Commandes utiles
 

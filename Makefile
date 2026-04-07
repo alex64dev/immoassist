@@ -23,11 +23,11 @@ install: ## Première installation complète
 	docker compose exec php composer install
 	@echo "$(YELLOW)Création de la base de données...$(RESET)"
 	docker compose exec php php bin/console doctrine:database:create --if-not-exists
-	docker compose exec php php bin/console doctrine:migrations:migrate --no-interaction
+	docker compose exec php php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
 	@echo "$(GREEN)ImmoAssist est prêt !$(RESET)"
-	@echo "  API      → http://localhost:8080/api"
+	@echo "  API      → http://localhost:8088/api"
 	@echo "  Frontend → http://localhost:5173"
-	@echo "  Mercure  → http://localhost:3001/.well-known/mercure"
+	@echo "  Mercure  → http://localhost:3002/.well-known/mercure"
 
 start: ## Démarre les conteneurs
 	docker compose up -d
@@ -80,7 +80,7 @@ test-coverage: ## Tests avec couverture de code
 # Base de données
 # ──────────────────────────────────────────────
 db-migrate: ## Exécute les migrations
-	docker compose exec php php bin/console doctrine:migrations:migrate --no-interaction
+	docker compose exec php php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
 
 db-diff: ## Génère une migration à partir des changements d'entité
 	docker compose exec php php bin/console doctrine:migrations:diff
@@ -88,7 +88,7 @@ db-diff: ## Génère une migration à partir des changements d'entité
 db-reset: ## Recrée la base de données (ATTENTION: perte de données)
 	docker compose exec php php bin/console doctrine:database:drop --force --if-exists
 	docker compose exec php php bin/console doctrine:database:create
-	docker compose exec php php bin/console doctrine:migrations:migrate --no-interaction
+	docker compose exec php php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
 
 # ──────────────────────────────────────────────
 # Nettoyage

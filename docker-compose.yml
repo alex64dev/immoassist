@@ -15,7 +15,7 @@ services:
       APP_SECRET: ${APP_SECRET:-changeme_in_env_file}
       DATABASE_URL: postgresql://immoassist:immoassist@db:5432/immoassist?serverVersion=16
       MERCURE_URL: http://mercure/.well-known/mercure
-      MERCURE_PUBLIC_URL: http://localhost:3001/.well-known/mercure
+      MERCURE_PUBLIC_URL: http://localhost:3002/.well-known/mercure
       MERCURE_JWT_SECRET: ${MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     depends_on:
@@ -31,7 +31,7 @@ services:
     image: nginx:1.27-alpine
     container_name: immoassist-nginx
     ports:
-      - "8080:80"
+      - "8088:80"
     volumes:
       - ./api/public:/var/www/api/public:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -53,7 +53,7 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U immoassist"]
       interval: 5s
@@ -69,7 +69,7 @@ services:
     image: dunglas/mercure:v0.16
     container_name: immoassist-mercure
     ports:
-      - "3001:80"
+      - "3002:80"
     environment:
       SERVER_NAME: ":80"
       MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
@@ -94,8 +94,8 @@ services:
       - ./front:/app
       - /app/node_modules
     environment:
-      VITE_API_URL: http://localhost:8080/api
-      VITE_MERCURE_URL: http://localhost:3001/.well-known/mercure
+      VITE_API_URL: http://localhost:8088/api
+      VITE_MERCURE_URL: http://localhost:3002/.well-known/mercure
     networks:
       - immoassist
 
