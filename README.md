@@ -1,33 +1,47 @@
 # ImmoAssist
 
-Générateur d'annonces immobilières propulsé par l'IA. Renseignez les caractéristiques d'un bien, choisissez un ton, et obtenez une annonce professionnelle en quelques secondes — avec affichage en temps réel grâce au streaming.
+Générateur d'annonces immobilières propulsé par l'IA. Renseigne les caractéristiques d'un bien, choisis un ton (luxe, familial, investisseur, étudiant), et obtiens une annonce professionnelle générée par Google Gemini.
 
 ## Stack technique
 
-| Couche     | Technologie                              |
-|------------|------------------------------------------|
-| Backend    | PHP 8.3 · Symfony 7 · API Platform 3    |
-| Frontend   | React (ou Vue) · Vite · Tailwind CSS    |
-| Base       | PostgreSQL 16                            |
-| Temps réel | Mercure (SSE)                            |
-| IA         | API Google Gemini                        |
-| Infra      | Docker Compose · GitHub Actions CI/CD    |
+| Couche     | Technologie                                              |
+|------------|----------------------------------------------------------|
+| Backend    | PHP 8.4 · Symfony 7.4 · API Platform 4 · Doctrine ORM 3 |
+| Frontend   | React 19 · Vite · TypeScript · Tailwind CSS 3           |
+| UI Kit     | shadcn/ui (Radix) · Lucide · Geist · Framer Motion      |
+| Forms      | react-hook-form · zod                                   |
+| Base       | PostgreSQL 16                                           |
+| Temps réel | Mercure (SSE) — *prévu pour la v2*                      |
+| IA         | API Google Gemini (`gemini-2.5-flash`)                  |
+| Infra      | Docker Compose · GitHub Actions CI/CD                   |
+
+## Fonctionnalités
+
+- ✅ Formulaire complet avec validation stricte (zod)
+- ✅ Liste dynamique de points forts (1 à 5)
+- ✅ Autocomplete d'adresses via la [Base Adresse Nationale](https://adresse.data.gouv.fr/) (gratuit, sans clé)
+- ✅ 4 tons d'annonce (luxe, familial, investisseur, étudiant)
+- ✅ Mode clair / sombre avec persistance
+- ✅ Génération via Google Gemini avec prompt calibré
+- ✅ Bouton « copier l'annonce »
+- 🔜 Streaming temps réel via Mercure (v2)
+- 🔜 Historique des annonces générées (v2)
 
 ## Prérequis
 
 - Docker et Docker Compose
-- Une clé API Google Gemini ([aistudio.google.com/apikey](https://aistudio.google.com/apikey))
+- Une clé API Google Gemini gratuite ([aistudio.google.com/apikey](https://aistudio.google.com/apikey))
 
 ## Installation
 
 ```bash
 # 1. Cloner le dépôt
-git clone git@github.com:votre-user/immoassist.git
+git clone git@github.com:alex64dev/immoassist.git
 cd immoassist
 
 # 2. Configurer les variables d'environnement
 cp .env.example .env
-# Éditez .env avec votre clé API Gemini
+# Édite .env et renseigne ta clé API Gemini
 
 # 3. Lancer le projet
 make install
@@ -37,9 +51,11 @@ L'application est accessible sur :
 
 | Service  | URL                                              |
 |----------|--------------------------------------------------|
-| Frontend | [localhost:5173](http://localhost:5173)           |
-| API      | [localhost:8088/api](http://localhost:8088/api)   |
-| Mercure  | [localhost:3002](http://localhost:3002)           |
+| Frontend | [localhost:5173](http://localhost:5173)          |
+| API      | [localhost:8088/api](http://localhost:8088/api)  |
+| Mercure  | [localhost:3002](http://localhost:3002)          |
+
+> ℹ️ Les ports sont décalés (8088, 5433, 3002) pour cohabiter avec d'autres services Docker.
 
 ## Commandes utiles
 
@@ -48,33 +64,55 @@ make start          # Démarrer les conteneurs
 make stop           # Arrêter les conteneurs
 make logs           # Voir les logs
 make shell          # Shell dans le conteneur PHP
-make lint           # Linting PHP + JS
+make lint           # Linting PHP CS Fixer + PHPStan + ESLint
 make fix            # Correction automatique du style PHP
-make test           # Lancer les tests
+make test           # Lancer les tests PHPUnit
 make db-migrate     # Exécuter les migrations
-make db-diff        # Générer une migration
+make db-diff        # Générer une migration depuis les entités
+make db-reset       # Drop + recreate + migrate (destructif)
 ```
 
 ## Architecture
 
 ```
 POST /api/annonces
-  → Controller reçoit les données du bien
-  → Service construit le prompt avec le ton choisi
-  → Appel streaming à l'API Gemini
-  → Chaque token est publié sur Mercure
-  → Le frontend souscrit au topic et affiche en temps réel
-  → L'annonce complète est sauvegardée en base
+  → API Platform reçoit le payload (JSON-LD)
+  → AnnonceProcessor (state processor) prend la main
+  → GeminiService construit le prompt selon le ton choisi
+  → Appel HTTP à l'API Google Gemini
+  → Le contenu généré est persisté dans l'entité Annonce
+  → Réponse JSON-LD renvoyée au front
+  → Le front affiche l'annonce avec animation Framer Motion
+```
+
+### Structure du frontend
+
+```
+front/src/
+├── components/
+│   ├── annonce/
+│   │   ├── AnnonceForm.tsx          # Formulaire react-hook-form + zod
+│   │   ├── AnnonceResult.tsx        # Affichage skeleton/success
+│   │   ├── AddressAutocomplete.tsx  # Autocomplete BAN
+│   │   └── property-types.ts
+│   ├── ui/                          # Composants shadcn/ui
+│   ├── theme-provider.tsx           # Light/dark + persistance
+│   └── mode-toggle.tsx
+├── services/api.ts                  # Client HTTP typé
+├── types/
+│   ├── annonce.ts                   # Types métier
+│   └── annonce-schema.ts            # Schéma zod
+└── App.tsx                          # Layout split-view
 ```
 
 ## CI/CD
 
 Le pipeline GitHub Actions exécute à chaque push :
 
-1. **Lint** — PHP CS Fixer + ESLint
-2. **Analyse statique** — PHPStan niveau 6
-3. **Tests** — PHPUnit avec base PostgreSQL
-4. **Build** — Frontend + images Docker (sur `main`)
+1. **PHP Quality** — PHP CS Fixer (`@Symfony` + `@Symfony:risky`) + PHPStan niveau 6
+2. **PHP Tests** — PHPUnit avec base PostgreSQL réelle
+3. **Front Build** — ESLint + `tsc -b` + `vite build`
+4. **Docker Build** — Images API et Front (sur `main` uniquement)
 
 ## Licence
 

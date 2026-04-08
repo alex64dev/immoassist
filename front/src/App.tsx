@@ -1,120 +1,72 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+
+import { AnnonceForm } from '@/components/annonce/AnnonceForm'
+import { AnnonceResult } from '@/components/annonce/AnnonceResult'
+import { ModeToggle } from '@/components/mode-toggle'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Toaster } from '@/components/ui/sonner'
+import { ApiError, createAnnonce } from '@/services/api'
+import type { Annonce } from '@/types/annonce'
+import { toCreatePayload, type AnnonceFormValues } from '@/types/annonce-schema'
+import { toast } from 'sonner'
+
+type ResultState = 'idle' | 'loading' | 'success'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [resultState, setResultState] = useState<ResultState>('idle')
+  const [annonce, setAnnonce] = useState<Annonce | null>(null)
+
+  const handleSubmit = async (values: AnnonceFormValues) => {
+    setResultState('loading')
+    try {
+      const payload = toCreatePayload(values)
+      const created = await createAnnonce(payload)
+      setAnnonce(created)
+      setResultState('success')
+    } catch (err) {
+      setResultState('idle')
+      const message =
+        err instanceof ApiError
+          ? `Erreur ${err.status} : ${err.message}`
+          : 'Impossible de générer l\'annonce. Réessaye dans un instant.'
+      toast.error(message)
+    }
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="bg-background text-foreground min-h-screen">
+      <header className="border-border bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 border-b backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">ImmoAssist</h1>
+            <p className="text-muted-foreground text-sm">
+              Générateur d'annonces immobilières propulsé par l'IA
+            </p>
+          </div>
+          <ModeToggle />
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      </header>
 
-      <div className="ticks"></div>
+      <main className="mx-auto max-w-6xl px-6 py-10">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Caractéristiques du bien</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AnnonceForm
+                onSubmit={handleSubmit}
+                isSubmitting={resultState === 'loading'}
+              />
+            </CardContent>
+          </Card>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+          <AnnonceResult state={resultState} annonce={annonce} />
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      </main>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <Toaster richColors position="bottom-right" />
+    </div>
   )
 }
 
