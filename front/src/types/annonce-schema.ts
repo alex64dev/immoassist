@@ -41,7 +41,12 @@ export const annonceFormSchema = z.object({
   ton: z.enum(TONS_VALUES, { message: 'Ton invalide' }),
 })
 
-export type AnnonceFormValues = z.infer<typeof annonceFormSchema>
+// Input : ce que le formulaire reçoit/manipule (les <input type="number">
+// renvoient des strings, donc avant coercion zod).
+export type AnnonceFormInput = z.input<typeof annonceFormSchema>
+// Output : ce que zod renvoie après validation (avec coercions appliquées,
+// surface/pieces/prix sont des number).
+export type AnnonceFormValues = z.output<typeof annonceFormSchema>
 
 /**
  * Transforme les valeurs du formulaire (avec pointsForts en objets)

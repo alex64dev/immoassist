@@ -25,10 +25,11 @@ import { PROPERTY_TYPES } from '@/components/annonce/property-types'
 import { TONS } from '@/types/annonce'
 import {
   annonceFormSchema,
+  type AnnonceFormInput,
   type AnnonceFormValues,
 } from '@/types/annonce-schema'
 
-const DEFAULT_VALUES: AnnonceFormValues = {
+const DEFAULT_VALUES: AnnonceFormInput = {
   type: 'appartement',
   surface: 75,
   pieces: 3,
@@ -50,7 +51,7 @@ type Props = {
 }
 
 export function AnnonceForm({ onSubmit, isSubmitting }: Props) {
-  const form = useForm<AnnonceFormValues>({
+  const form = useForm<AnnonceFormInput, undefined, AnnonceFormValues>({
     resolver: zodResolver(annonceFormSchema),
     defaultValues: DEFAULT_VALUES,
     mode: 'onTouched',
@@ -124,7 +125,12 @@ export function AnnonceForm({ onSubmit, isSubmitting }: Props) {
               <FormItem>
                 <FormLabel>Surface (m²)</FormLabel>
                 <FormControl>
-                  <Input type="number" min={1} {...field} />
+                  <Input
+                    type="number"
+                    min={1}
+                    {...field}
+                    value={field.value as number | string}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -138,7 +144,13 @@ export function AnnonceForm({ onSubmit, isSubmitting }: Props) {
               <FormItem>
                 <FormLabel>Pièces</FormLabel>
                 <FormControl>
-                  <Input type="number" min={1} max={15} {...field} />
+                  <Input
+                    type="number"
+                    min={1}
+                    max={15}
+                    {...field}
+                    value={field.value as number | string}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -158,6 +170,7 @@ export function AnnonceForm({ onSubmit, isSubmitting }: Props) {
                     max={100000000}
                     step={1000}
                     {...field}
+                    value={field.value as number | string}
                   />
                 </FormControl>
                 <FormMessage />
