@@ -12,6 +12,20 @@ import { toast } from 'sonner'
 
 type ResultState = 'idle' | 'loading' | 'success'
 
+function getErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    switch (err.code) {
+      case 'GEMINI_QUOTA_EXCEEDED':
+        return "Le quota gratuit de l'API Gemini est atteint pour aujourd'hui. Réessaye plus tard."
+      case 'GEMINI_UNAVAILABLE':
+        return 'Le service de génération est temporairement indisponible. Réessaye dans un instant.'
+      default:
+        return `Erreur ${err.status} : ${err.message}`
+    }
+  }
+  return "Impossible de générer l'annonce. Réessaye dans un instant."
+}
+
 function App() {
   const [resultState, setResultState] = useState<ResultState>('idle')
   const [annonce, setAnnonce] = useState<Annonce | null>(null)
@@ -25,11 +39,7 @@ function App() {
       setResultState('success')
     } catch (err) {
       setResultState('idle')
-      const message =
-        err instanceof ApiError
-          ? `Erreur ${err.status} : ${err.message}`
-          : 'Impossible de générer l\'annonce. Réessaye dans un instant.'
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     }
   }
 

@@ -15,7 +15,8 @@ services:
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
         bind:
             $apiKey: '%env(GEMINI_API_KEY)%'
-            $model: '%env(GEMINI_MODEL)%'
+            $primaryModel: '%env(GEMINI_MODEL_PRIMARY)%'
+            $fallbackModel: '%env(default::GEMINI_MODEL_FALLBACK)%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
