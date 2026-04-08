@@ -1,4 +1,4 @@
-.PHONY: help install start stop restart logs shell db-shell lint test clean
+.PHONY: help install start stop restart logs shell db-shell lint test clean pr pr-merge
 
 # ──────────────────────────────────────────────
 # Couleurs
@@ -89,6 +89,65 @@ db-reset: ## Recrée la base de données (ATTENTION: perte de données)
 	docker compose exec php php bin/console doctrine:database:drop --force --if-exists
 	docker compose exec php php bin/console doctrine:database:create
 	docker compose exec php php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+
+# ──────────────────────────────────────────────
+# Git & Pull Requests
+# ──────────────────────────────────────────────
+pr: ## Crée une pull request (interactif : titre + body)
+	@branch=$$(git branch --show-current); \
+	if [ "$$branch" = "main" ] || [ "$$branch" = "master" ]; then \
+		echo "$(YELLOW)Tu es sur $$branch, change de branche d'abord.$(RESET)"; \
+		exit 1; \
+	fi; \
+	echo "$(GREEN)→ Branche détectée :$(RESET) $$branch"; \
+	echo ""; \
+	printf "$(GREEN)📝 Titre de la PR :$(RESET) "; \
+	read title; \
+	if [ -z "$$title" ]; then \
+		echo "$(YELLOW)Titre vide, abandon.$(RESET)"; \
+		exit 1; \
+	fi; \
+	echo ""; \
+	if [ -f .pr-body.md ]; then \
+		lines=$$(wc -l < .pr-body.md | tr -d ' '); \
+		echo "$(GREEN)📄 Fichier .pr-body.md trouvé ($$lines lignes)$(RESET)"; \
+		printf "Utiliser ce fichier ? [Y/e/n] "; \
+		read ans; \
+		case "$$ans" in \
+			e|E) $${EDITOR:-vi} .pr-body.md ;; \
+			n|N) body_opt="" ;; \
+			*) body_opt="--body-file .pr-body.md" ;; \
+		esac; \
+		[ "$$ans" != "n" ] && [ "$$ans" != "N" ] && body_opt="--body-file .pr-body.md"; \
+	else \
+		echo "$(YELLOW)📄 Aucun fichier .pr-body.md$(RESET)"; \
+		printf "Que faire ? [e=éditeur / v=vide / s=auto-fill commits] "; \
+		read ans; \
+		case "$$ans" in \
+			e|E) $${EDITOR:-vi} .pr-body.md; body_opt="--body-file .pr-body.md" ;; \
+			s|S) body_opt="--fill" ;; \
+			*) body_opt="--body \"\"" ;; \
+		esac; \
+	fi; \
+	echo ""; \
+	echo "$(YELLOW)🚀 Push de la branche...$(RESET)"; \
+	git push -u origin "$$branch"; \
+	echo "$(YELLOW)📬 Création de la PR...$(RESET)"; \
+	eval gh pr create --base main --head "$$branch" --title \"$$title\" $$body_opt
+
+pr-merge: ## Merge la PR de la branche courante en squash + cleanup local
+	@branch=$$(git branch --show-current); \
+	if [ "$$branch" = "main" ] || [ "$$branch" = "master" ]; then \
+		echo "$(YELLOW)Tu es sur $$branch, rien à merger.$(RESET)"; \
+		exit 1; \
+	fi; \
+	echo "$(GREEN)→ Merge en squash de :$(RESET) $$branch"; \
+	gh pr merge --squash --delete-branch; \
+	echo "$(YELLOW)Cleanup local...$(RESET)"; \
+	git checkout main; \
+	git pull; \
+	git branch -d "$$branch" 2>/dev/null || true; \
+	echo "$(GREEN)✓ Branche $$branch mergée et supprimée localement$(RESET)"
 
 # ──────────────────────────────────────────────
 # Nettoyage

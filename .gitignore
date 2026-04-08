@@ -38,3 +38,9 @@ docker-compose.override.yml
 # Symfony : .env est commité (defaults), .env.local contient les secrets
 /api/.env.local
 /api/.env.*.local
+
+# ──────────────────────────────────────────────
+# Brouillons locaux
+# ──────────────────────────────────────────────
+# Body local pour `make pr` — ne jamais commit
+/.pr-body.md
