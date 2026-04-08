@@ -72,6 +72,39 @@ make db-diff        # Générer une migration depuis les entités
 make db-reset       # Drop + recreate + migrate (destructif)
 ```
 
+### Workflow Git & Pull Requests
+
+Deux cibles `make` automatisent le cycle complet d'une PR (nécessite [`gh`](https://cli.github.com/) authentifié) :
+
+```bash
+make pr             # Crée une pull request (interactif)
+make pr-merge       # Merge en squash + cleanup local
+```
+
+#### `make pr` — interactif
+
+1. **Refuse de tourner** si tu es sur `main` ou `master`
+2. Affiche la **branche détectée**
+3. Demande le **titre** de la PR (`read title`)
+4. **Si `.pr-body.md` existe** → propose :
+   - `Y` (défaut) → utiliser le fichier tel quel
+   - `e` → ouvrir dans `$EDITOR` pour l'éditer avant
+   - `n` → ignorer le fichier et créer la PR avec un body vide
+5. **Sinon** → propose :
+   - `e` → ouvrir `$EDITOR` pour rédiger maintenant (le fichier est gardé)
+   - `v` → créer la PR avec un body vide
+   - `s` → utiliser `gh pr create --fill` (auto-fill depuis les messages de commit)
+6. **Push** la branche avec `-u origin <branche>`
+7. **Crée la PR** avec `gh pr create --title ... --body-file ...` (ou `--fill` selon le choix)
+
+> 💡 Le fichier `.pr-body.md` est ajouté au `.gitignore` pour ne jamais être commité par accident. Il sert juste de brouillon local pour préparer le body sans galérer avec les sauts de ligne du terminal.
+
+#### `make pr-merge` — non-interactif
+
+1. **Refuse** si tu es sur `main`/`master`
+2. `gh pr merge --squash --delete-branch` (squash + supprime la branche distante)
+3. `git checkout main && git pull && git branch -d <branche>` (cleanup local)
+
 ## Architecture
 
 ```
