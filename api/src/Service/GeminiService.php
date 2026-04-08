@@ -12,12 +12,12 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class GeminiService
 {
-    private const string MODEL = 'gemini-2.5-flash';
     private const string ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent';
 
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly string $apiKey,
+        private readonly string $model,
     ) {
     }
 
@@ -25,7 +25,7 @@ class GeminiService
     {
         $prompt = $this->buildPrompt($annonce);
 
-        $response = $this->httpClient->request('POST', sprintf(self::ENDPOINT, self::MODEL), [
+        $response = $this->httpClient->request('POST', sprintf(self::ENDPOINT, $this->model), [
             'headers' => [
                 'x-goog-api-key' => $this->apiKey,
             ],
