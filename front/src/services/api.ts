@@ -4,11 +4,13 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8088/api'
 
 export class ApiError extends Error {
   readonly status: number
+  readonly code: string | null
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, code: string | null = null) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -26,13 +28,18 @@ export async function createAnnonce(
 
   if (!response.ok) {
     let detail = response.statusText
+    let code: string | null = null
     try {
       const data = await response.json()
-      detail = data['hydra:description'] ?? data.detail ?? detail
+      // Format de notre GeminiExceptionListener : { code, detail, status }
+      // Format Hydra par défaut d'API Platform : { 'hydra:description', detail }
+      code = typeof data.code === 'string' ? data.code : null
+      detail =
+        data['hydra:description'] ?? data.detail ?? data.message ?? detail
     } catch {
       // ignore parse errors
     }
-    throw new ApiError(detail, response.status)
+    throw new ApiError(detail, response.status, code)
   }
 
   return (await response.json()) as Annonce
