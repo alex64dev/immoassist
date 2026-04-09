@@ -137,6 +137,20 @@ export function useAnnonceGeneration() {
     [closeStream, startTypingLoop, stopInterval],
   )
 
+  const selectAnnonce = useCallback(
+    (selected: Annonce) => {
+      closeStream()
+      stopInterval()
+      queueRef.current = ''
+      streamFinishedRef.current = false
+      finalAnnonceRef.current = null
+      setAnnonce(selected)
+      setStreamingText(selected.contenu ?? '')
+      setState('success')
+    },
+    [closeStream, stopInterval],
+  )
+
   const reset = useCallback(() => {
     closeStream()
     stopInterval()
@@ -148,5 +162,5 @@ export function useAnnonceGeneration() {
     setAnnonce(null)
   }, [closeStream, stopInterval])
 
-  return { state, streamingText, annonce, generate, reset }
+  return { state, streamingText, annonce, generate, selectAnnonce, reset }
 }

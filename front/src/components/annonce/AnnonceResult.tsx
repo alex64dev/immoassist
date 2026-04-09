@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, Copy, FileText, Sparkles } from 'lucide-react'
+import { Check, Copy, FileText, RefreshCw, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -17,9 +17,15 @@ type Props = {
   state: 'idle' | 'streaming' | 'success'
   annonce: Annonce | null
   streamingText: string
+  onRegenerate?: () => void
 }
 
-export function AnnonceResult({ state, annonce, streamingText }: Props) {
+export function AnnonceResult({
+  state,
+  annonce,
+  streamingText,
+  onRegenerate,
+}: Props) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -42,20 +48,34 @@ export function AnnonceResult({ state, annonce, streamingText }: Props) {
           Annonce générée
         </CardTitle>
         {state === 'success' && annonce?.contenu && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleCopy}
-            aria-label="Copier l'annonce"
-          >
-            {copied ? (
-              <Check className="size-4 text-green-600 dark:text-green-400" />
-            ) : (
-              <Copy className="size-4" />
+          <div className="flex items-center gap-1">
+            {onRegenerate && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onRegenerate}
+                aria-label="Régénérer l'annonce"
+              >
+                <RefreshCw className="size-4" />
+                <span className="ml-1.5">Régénérer</span>
+              </Button>
             )}
-            <span className="ml-1.5">{copied ? 'Copié' : 'Copier'}</span>
-          </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleCopy}
+              aria-label="Copier l'annonce"
+            >
+              {copied ? (
+                <Check className="size-4 text-green-600 dark:text-green-400" />
+              ) : (
+                <Copy className="size-4" />
+              )}
+              <span className="ml-1.5">{copied ? 'Copié' : 'Copier'}</span>
+            </Button>
+          </div>
         )}
       </CardHeader>
 

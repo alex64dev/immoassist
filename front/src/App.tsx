@@ -1,11 +1,20 @@
+import { useState } from 'react'
+
 import { AnnonceForm } from '@/components/annonce/AnnonceForm'
+import { AnnonceHistory } from '@/components/annonce/AnnonceHistory'
 import { AnnonceResult } from '@/components/annonce/AnnonceResult'
 import { ModeToggle } from '@/components/mode-toggle'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Toaster } from '@/components/ui/sonner'
 import { useAnnonceGeneration } from '@/hooks/useAnnonceGeneration'
 import { ApiError } from '@/services/api'
-import { toCreatePayload, type AnnonceFormValues } from '@/types/annonce-schema'
+import type { Annonce } from '@/types/annonce'
+import {
+  toCreatePayload,
+  toFormInput,
+  type AnnonceFormInput,
+  type AnnonceFormValues,
+} from '@/types/annonce-schema'
 import { toast } from 'sonner'
 
 function getErrorMessage(err: unknown): string {
@@ -23,11 +32,39 @@ function getErrorMessage(err: unknown): string {
 }
 
 function App() {
-  const { state, streamingText, annonce, generate } = useAnnonceGeneration()
+  const { state, streamingText, annonce, generate, selectAnnonce } =
+    useAnnonceGeneration()
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0)
+  const [formInitialValues, setFormInitialValues] =
+    useState<AnnonceFormInput | null>(null)
+
+  const handleHistorySelect = (selected: Annonce) => {
+    selectAnnonce(selected)
+    setFormInitialValues(toFormInput(selected))
+  }
+
+  const handleRegenerate = async () => {
+    if (!annonce) return
+    try {
+      await generate({
+        type: annonce.type,
+        surface: annonce.surface,
+        pieces: annonce.pieces,
+        prix: annonce.prix,
+        localisation: annonce.localisation,
+        pointsForts: annonce.pointsForts,
+        ton: annonce.ton,
+      })
+      setHistoryRefreshKey((k) => k + 1)
+    } catch (err) {
+      toast.error(getErrorMessage(err))
+    }
+  }
 
   const handleSubmit = async (values: AnnonceFormValues) => {
     try {
       await generate(toCreatePayload(values))
+      setHistoryRefreshKey((k) => k + 1)
     } catch (err) {
       toast.error(getErrorMessage(err))
     }
@@ -43,7 +80,13 @@ function App() {
               Générateur d'annonces immobilières propulsé par l'IA
             </p>
           </div>
-          <ModeToggle />
+          <div className="flex items-center gap-2">
+            <AnnonceHistory
+              refreshKey={historyRefreshKey}
+              onSelect={handleHistorySelect}
+            />
+            <ModeToggle />
+          </div>
         </div>
       </header>
 
@@ -57,6 +100,7 @@ function App() {
               <AnnonceForm
                 onSubmit={handleSubmit}
                 isSubmitting={state === 'streaming'}
+                initialValues={formInitialValues}
               />
             </CardContent>
           </Card>
@@ -65,6 +109,7 @@ function App() {
             state={state}
             annonce={annonce}
             streamingText={streamingText}
+            onRegenerate={handleRegenerate}
           />
         </div>
       </main>

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { CreateAnnoncePayload } from '@/types/annonce'
+import type { Annonce, CreateAnnoncePayload, Ton } from '@/types/annonce'
 
 export const TONS_VALUES = ['luxe', 'familial', 'investisseur', 'etudiant'] as const
 
@@ -58,5 +58,21 @@ export function toCreatePayload(
   return {
     ...values,
     pointsForts: values.pointsForts.map((p) => p.value),
+  }
+}
+
+/**
+ * Transforme une Annonce existante en valeurs initiales pour le formulaire
+ * (utilisé quand on sélectionne une annonce dans l'historique).
+ */
+export function toFormInput(annonce: Annonce): AnnonceFormInput {
+  return {
+    type: annonce.type,
+    surface: annonce.surface,
+    pieces: annonce.pieces,
+    prix: annonce.prix,
+    localisation: annonce.localisation,
+    pointsForts: annonce.pointsForts.map((value) => ({ value })),
+    ton: annonce.ton as Ton,
   }
 }

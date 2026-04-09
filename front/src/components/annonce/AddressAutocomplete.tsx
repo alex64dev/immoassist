@@ -36,13 +36,15 @@ export function AddressAutocomplete({
   const [suggestions, setSuggestions] = useState<AddressFeature[]>([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  // Marqueur posé après une sélection : empêche le useEffect de relancer
-  // une recherche à la prochaine prop change synchrone.
-  const skipNextFetch = useRef(false)
+  // Vrai uniquement si la dernière modif de `value` vient d'une saisie clavier.
+  // Évite de relancer une recherche quand le parent reset le formulaire
+  // (ex : sélection d'une annonce depuis l'historique).
+  const userTyped = useRef(false)
 
   useEffect(() => {
-    if (skipNextFetch.current) {
-      skipNextFetch.current = false
+    if (!userTyped.current) {
+      setSuggestions([])
+      setOpen(false)
       return
     }
 
@@ -80,10 +82,15 @@ export function AddressAutocomplete({
   }, [value])
 
   const handleSelect = (label: string) => {
-    skipNextFetch.current = true
+    userTyped.current = false
     onChange(label)
     setSuggestions([])
     setOpen(false)
+  }
+
+  const handleType = (next: string) => {
+    userTyped.current = true
+    onChange(next)
   }
 
   return (
@@ -92,7 +99,7 @@ export function AddressAutocomplete({
         <div className="relative">
           <Input
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => handleType(e.target.value)}
             onBlur={onBlur}
             placeholder={placeholder}
             autoComplete="off"
