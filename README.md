@@ -1,6 +1,6 @@
 # ImmoAssist
 
-Générateur d'annonces immobilières propulsé par l'IA. Renseigne les caractéristiques d'un bien, choisis un ton (luxe, familial, investisseur, étudiant), et obtiens une annonce professionnelle générée par Google Gemini.
+Générateur d'annonces immobilières propulsé par l'IA. Renseigne les caractéristiques d'un bien, choisis un ton (luxe, familial, investisseur, étudiant), et regarde l'annonce s'écrire en temps réel — comme avec ChatGPT — grâce au **streaming Mercure**.
 
 ## Stack technique
 
@@ -11,21 +11,20 @@ Générateur d'annonces immobilières propulsé par l'IA. Renseigne les caracté
 | UI Kit     | shadcn/ui (Radix) · Lucide · Geist · Framer Motion      |
 | Forms      | react-hook-form · zod                                   |
 | Base       | PostgreSQL 16                                           |
-| Temps réel | Mercure (SSE) — *prévu pour la v2*                      |
-| IA         | API Google Gemini (`gemini-2.5-flash`)                  |
+| Temps réel | Mercure (SSE) — streaming token-par-token               |
+| IA         | API Google Gemini (`gemini-2.5-flash` + fallback `flash-lite`) |
 | Infra      | Docker Compose · GitHub Actions CI/CD                   |
 
 ## Fonctionnalités
 
-- ✅ Formulaire complet avec validation stricte (zod)
-- ✅ Liste dynamique de points forts (1 à 5)
+- ✅ Formulaire complet avec validation stricte (zod) et liste dynamique de points forts (1 à 5)
 - ✅ Autocomplete d'adresses via la [Base Adresse Nationale](https://adresse.data.gouv.fr/) (gratuit, sans clé)
 - ✅ 4 tons d'annonce (luxe, familial, investisseur, étudiant)
-- ✅ Mode clair / sombre avec persistance
-- ✅ Génération via Google Gemini avec prompt calibré
-- ✅ Bouton « copier l'annonce »
-- 🔜 Streaming temps réel via Mercure (v2)
-- 🔜 Historique des annonces générées (v2)
+- ✅ Mode clair / sombre avec persistance localStorage
+- ✅ **Streaming token-par-token** via Mercure : effet « machine à écrire » fluide avec buffer de typing à cadence adaptative côté front
+- ✅ **Gestion d'erreurs résiliente** : exceptions domaine `GeminiQuotaExceededException` / `GeminiUnavailableException` avec fallback automatique sur un modèle secondaire, messages utilisateur clairs (via `Sonner` toasts)
+- ✅ **Historique des annonces** dans un drawer latéral, réutilisation au clic (formulaire rempli + résultat affiché)
+- ✅ **Régénérer / Copier / Supprimer** une annonce, avec modale de confirmation shadcn pour la suppression
 
 ## Prérequis
 
@@ -70,7 +69,12 @@ make test           # Lancer les tests PHPUnit
 make db-migrate     # Exécuter les migrations
 make db-diff        # Générer une migration depuis les entités
 make db-reset       # Drop + recreate + migrate (destructif)
+make hooks          # Active les hooks git versionnés (.githooks/)
 ```
+
+### Hooks git
+
+Le dépôt versionne un hook `pre-commit` dans `.githooks/` qui **bloque les commits directs sur `main`/`master`**, pour forcer le workflow par branche dédiée + PR. Activé automatiquement par `make install`, ou à la main avec `make hooks`. Bypass exceptionnel : `git commit --no-verify`.
 
 ### Workflow Git & Pull Requests
 
@@ -107,16 +111,35 @@ make pr-merge       # Merge en squash + cleanup local
 
 ## Architecture
 
+### Flux de génération en streaming
+
 ```
-POST /api/annonces
-  → API Platform reçoit le payload (JSON-LD)
-  → AnnonceProcessor (state processor) prend la main
-  → GeminiService construit le prompt selon le ton choisi
-  → Appel HTTP à l'API Google Gemini
-  → Le contenu généré est persisté dans l'entité Annonce
-  → Réponse JSON-LD renvoyée au front
-  → Le front affiche l'annonce avec animation Framer Motion
+1. Front génère un streamId (uuid) et ouvre une EventSource
+   sur Mercure : http://localhost:3002/.well-known/mercure?topic=annonce/<streamId>
+
+2. Front POST /api/annonces avec { ...payload, streamId }
+
+3. API Platform → AnnonceProcessor → GeminiService::streamAnnonce()
+   → appelle l'endpoint SSE de Gemini :streamGenerateContent?alt=sse
+   → parse les events ligne par ligne
+   → publie chaque chunk de texte sur le topic Mercure dédié
+
+4. Pendant ce temps, le hook useAnnonceGeneration côté front
+   reçoit les chunks via l'EventSource et les empile dans une queue
+
+5. Un setInterval dépile la queue caractère par caractère et alimente
+   le state React → effet typewriter fluide. Si Gemini va plus vite que
+   l'affichage, la cadence accélère (1 → 5 chars par tick) pour rattraper.
+
+6. Quand Gemini a fini, le back persiste l'Annonce en BDD et publie
+   un message { type: 'done', id } sur Mercure. Le front draine la queue
+   restante puis bascule en état 'success' et expose les boutons
+   Régénérer / Copier.
 ```
+
+### Résilience Gemini
+
+`GeminiService::generateAnnonce()` (mode bloquant utilisé en fallback) tente le modèle primaire, et si l'appel échoue avec une `GeminiException`, retente automatiquement avec un modèle secondaire configurable. Les exceptions HTTP sont mappées en exceptions domaine (`GeminiQuotaExceededException` sur 429/`RESOURCE_EXHAUSTED`, `GeminiUnavailableException` sur les autres erreurs), interceptées par un `ExceptionListener` qui renvoie un payload JSON propre `{ code, detail, status }` que le front utilise pour afficher un message toast contextuel.
 
 ### Structure du frontend
 
@@ -125,17 +148,20 @@ front/src/
 ├── components/
 │   ├── annonce/
 │   │   ├── AnnonceForm.tsx          # Formulaire react-hook-form + zod
-│   │   ├── AnnonceResult.tsx        # Affichage skeleton/success
-│   │   ├── AddressAutocomplete.tsx  # Autocomplete BAN
+│   │   ├── AnnonceResult.tsx        # Affichage idle/streaming/success + boutons
+│   │   ├── AnnonceHistory.tsx       # Drawer Sheet avec liste + suppression
+│   │   ├── AddressAutocomplete.tsx  # Autocomplete BAN (fetch sur saisie clavier)
 │   │   └── property-types.ts
-│   ├── ui/                          # Composants shadcn/ui
+│   ├── ui/                          # Composants shadcn/ui (sheet, alert-dialog, ...)
 │   ├── theme-provider.tsx           # Light/dark + persistance
 │   └── mode-toggle.tsx
-├── services/api.ts                  # Client HTTP typé
+├── hooks/
+│   └── useAnnonceGeneration.ts      # Streaming Mercure + buffer typing
+├── services/api.ts                  # Client HTTP typé (create / list / delete)
 ├── types/
 │   ├── annonce.ts                   # Types métier
-│   └── annonce-schema.ts            # Schéma zod
-└── App.tsx                          # Layout split-view
+│   └── annonce-schema.ts            # Schéma zod + helpers de conversion
+└── App.tsx                          # Layout split-view + header
 ```
 
 ## CI/CD
