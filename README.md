@@ -2,6 +2,10 @@
 
 Générateur d'annonces immobilières propulsé par l'IA. Renseigne les caractéristiques d'un bien, choisis un ton (luxe, familial, investisseur, étudiant), et regarde l'annonce s'écrire en temps réel — comme avec ChatGPT — grâce au **streaming Mercure**.
 
+## Démo
+
+https://github.com/user-attachments/assets/cf45b7a3-ae85-4c20-93df-a7d81a36e683
+
 ## Stack technique
 
 | Couche     | Technologie                                              |
