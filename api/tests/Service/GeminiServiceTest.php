@@ -15,6 +15,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
+use Symfony\Component\Mercure\HubInterface;
 
 final class GeminiServiceTest extends TestCase
 {
@@ -43,6 +44,7 @@ final class GeminiServiceTest extends TestCase
 
         return new GeminiService(
             httpClient: $httpClient,
+            hub: $this->createMock(HubInterface::class),
             apiKey: self::FAKE_API_KEY,
             primaryModel: self::PRIMARY_MODEL,
             fallbackModel: $fallback,
