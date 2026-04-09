@@ -1,4 +1,5 @@
 import { Loader2, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { useEffect } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
@@ -48,14 +49,25 @@ const MAX_POINTS_FORTS = 5
 type Props = {
   onSubmit: (values: AnnonceFormValues) => void | Promise<void>
   isSubmitting: boolean
+  initialValues?: AnnonceFormInput | null
 }
 
-export function AnnonceForm({ onSubmit, isSubmitting }: Props) {
+export function AnnonceForm({
+  onSubmit,
+  isSubmitting,
+  initialValues,
+}: Props) {
   const form = useForm<AnnonceFormInput, undefined, AnnonceFormValues>({
     resolver: zodResolver(annonceFormSchema),
     defaultValues: DEFAULT_VALUES,
     mode: 'onTouched',
   })
+
+  useEffect(() => {
+    if (initialValues) {
+      form.reset(initialValues)
+    }
+  }, [initialValues, form])
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,

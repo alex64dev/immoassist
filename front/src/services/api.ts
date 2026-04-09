@@ -44,3 +44,33 @@ export async function createAnnonce(
 
   return (await response.json()) as Annonce
 }
+
+type HydraCollection<T> = {
+  'hydra:member'?: T[]
+  member?: T[]
+}
+
+export async function deleteAnnonce(id: number): Promise<void> {
+  const response = await fetch(`${API_URL}/annonces/${id}`, {
+    method: 'DELETE',
+  })
+
+  if (!response.ok && response.status !== 204) {
+    throw new ApiError(response.statusText, response.status)
+  }
+}
+
+export async function listAnnonces(): Promise<Annonce[]> {
+  const response = await fetch(`${API_URL}/annonces?order[createdAt]=desc`, {
+    headers: {
+      Accept: 'application/ld+json',
+    },
+  })
+
+  if (!response.ok) {
+    throw new ApiError(response.statusText, response.status)
+  }
+
+  const data = (await response.json()) as HydraCollection<Annonce>
+  return data['hydra:member'] ?? data.member ?? []
+}
