@@ -28,4 +28,5 @@ export type CreateAnnoncePayload = {
   localisation: string
   pointsForts: string[]
   ton: Ton
+  streamId?: string
 }

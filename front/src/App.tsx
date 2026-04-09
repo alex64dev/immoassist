@@ -1,16 +1,12 @@
-import { useState } from 'react'
-
 import { AnnonceForm } from '@/components/annonce/AnnonceForm'
 import { AnnonceResult } from '@/components/annonce/AnnonceResult'
 import { ModeToggle } from '@/components/mode-toggle'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Toaster } from '@/components/ui/sonner'
-import { ApiError, createAnnonce } from '@/services/api'
-import type { Annonce } from '@/types/annonce'
+import { useAnnonceGeneration } from '@/hooks/useAnnonceGeneration'
+import { ApiError } from '@/services/api'
 import { toCreatePayload, type AnnonceFormValues } from '@/types/annonce-schema'
 import { toast } from 'sonner'
-
-type ResultState = 'idle' | 'loading' | 'success'
 
 function getErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
@@ -27,18 +23,12 @@ function getErrorMessage(err: unknown): string {
 }
 
 function App() {
-  const [resultState, setResultState] = useState<ResultState>('idle')
-  const [annonce, setAnnonce] = useState<Annonce | null>(null)
+  const { state, streamingText, annonce, generate } = useAnnonceGeneration()
 
   const handleSubmit = async (values: AnnonceFormValues) => {
-    setResultState('loading')
     try {
-      const payload = toCreatePayload(values)
-      const created = await createAnnonce(payload)
-      setAnnonce(created)
-      setResultState('success')
+      await generate(toCreatePayload(values))
     } catch (err) {
-      setResultState('idle')
       toast.error(getErrorMessage(err))
     }
   }
@@ -66,12 +56,16 @@ function App() {
             <CardContent>
               <AnnonceForm
                 onSubmit={handleSubmit}
-                isSubmitting={resultState === 'loading'}
+                isSubmitting={state === 'streaming'}
               />
             </CardContent>
           </Card>
 
-          <AnnonceResult state={resultState} annonce={annonce} />
+          <AnnonceResult
+            state={state}
+            annonce={annonce}
+            streamingText={streamingText}
+          />
         </div>
       </main>
 

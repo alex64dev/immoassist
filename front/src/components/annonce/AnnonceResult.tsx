@@ -14,11 +14,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import type { Annonce } from '@/types/annonce'
 
 type Props = {
-  state: 'idle' | 'loading' | 'success'
+  state: 'idle' | 'streaming' | 'success'
   annonce: Annonce | null
+  streamingText: string
 }
 
-export function AnnonceResult({ state, annonce }: Props) {
+export function AnnonceResult({ state, annonce, streamingText }: Props) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -77,21 +78,28 @@ export function AnnonceResult({ state, annonce }: Props) {
             </motion.div>
           )}
 
-          {state === 'loading' && (
+          {state === 'streaming' && (
             <motion.div
-              key="loading"
+              key="streaming"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="space-y-3"
             >
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-[95%]" />
-              <Skeleton className="h-4 w-[92%]" />
-              <Skeleton className="h-4 w-[97%]" />
-              <Skeleton className="h-4 w-[88%]" />
-              <Skeleton className="h-4 w-[94%]" />
-              <Skeleton className="h-4 w-2/3" />
+              {streamingText === '' ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-[95%]" />
+                  <Skeleton className="h-4 w-[92%]" />
+                  <Skeleton className="h-4 w-[97%]" />
+                  <Skeleton className="h-4 w-[88%]" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              ) : (
+                <div className="text-foreground/90 text-sm leading-relaxed whitespace-pre-wrap">
+                  {streamingText}
+                  <span className="ml-0.5 inline-block h-4 w-[2px] -translate-y-px animate-pulse bg-current align-middle" />
+                </div>
+              )}
             </motion.div>
           )}
 
