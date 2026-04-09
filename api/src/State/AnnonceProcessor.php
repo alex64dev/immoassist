@@ -11,6 +11,8 @@ use App\Service\GeminiService;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 
+use function sprintf;
+
 /**
  * @implements ProcessorInterface<Annonce, Annonce>
  */
@@ -24,11 +26,24 @@ class AnnonceProcessor implements ProcessorInterface
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Annonce
     {
-        $data->setContenu($this->geminiService->generateAnnonce($data));
+        $streamId = $data->getStreamId();
+        $topic = null !== $streamId && '' !== $streamId
+            ? sprintf('annonce/%s', $streamId)
+            : null;
+
+        $contenu = null !== $topic
+            ? $this->geminiService->streamAnnonce($data, $topic)
+            : $this->geminiService->generateAnnonce($data);
+
+        $data->setContenu($contenu);
         $data->setCreatedAt(new DateTimeImmutable());
 
         $this->em->persist($data);
         $this->em->flush();
+
+        if (null !== $topic) {
+            $this->geminiService->publishDone($topic, (int) $data->getId());
+        }
 
         return $data;
     }

@@ -59,6 +59,12 @@ class Annonce
     #[ORM\Column]
     private ?DateTimeImmutable $createdAt = null;
 
+    /**
+     * Identifiant de stream Mercure transmis par le front pour recevoir
+     * la génération token-par-token. Non persisté en BDD.
+     */
+    private ?string $streamId = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -174,6 +180,18 @@ class Annonce
     public function setCreatedAt(DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getStreamId(): ?string
+    {
+        return $this->streamId;
+    }
+
+    public function setStreamId(?string $streamId): static
+    {
+        $this->streamId = $streamId;
 
         return $this;
     }
