@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+#
+# Empêche les commits directs sur main / master.
+# Force le workflow par branche dédiée + PR.
+
+branch="$(git symbolic-ref --short HEAD 2>/dev/null)"
+
+if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
+    echo ""
+    echo "❌ Commit refusé : tu es sur la branche '$branch'."
+    echo ""
+    echo "   Crée une branche dédiée avant de commit :"
+    echo "     git checkout -b feat/ma-feature"
+    echo ""
+    echo "   (Pour bypass dans un cas exceptionnel : git commit --no-verify)"
+    echo ""
+    exit 1
+fi
+
+exit 0

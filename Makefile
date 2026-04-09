@@ -1,4 +1,4 @@
-.PHONY: help install start stop restart logs shell db-shell lint test clean pr pr-merge
+.PHONY: help install start stop restart logs shell db-shell lint test clean pr pr-merge hooks
 
 # ──────────────────────────────────────────────
 # Couleurs
@@ -24,10 +24,16 @@ install: ## Première installation complète
 	@echo "$(YELLOW)Création de la base de données...$(RESET)"
 	docker compose exec php php bin/console doctrine:database:create --if-not-exists
 	docker compose exec php php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+	@$(MAKE) hooks
 	@echo "$(GREEN)ImmoAssist est prêt !$(RESET)"
 	@echo "  API      → http://localhost:8088/api"
 	@echo "  Frontend → http://localhost:5173"
 	@echo "  Mercure  → http://localhost:3002/.well-known/mercure"
+
+hooks: ## Active les hooks git versionnés (.githooks)
+	@git config core.hooksPath .githooks
+	@chmod +x .githooks/* 2>/dev/null || true
+	@echo "$(GREEN)✓ Hooks git activés (.githooks)$(RESET)"
 
 start: ## Démarre les conteneurs
 	docker compose up -d
