@@ -66,8 +66,8 @@ class GeminiService
      * Génère le contenu de l'annonce en streaming et publie chaque chunk
      * sur le topic Mercure indiqué. Retourne le texte complet à la fin.
      *
-     * Pas de fallback streaming pour rester simple : si le primaire échoue,
-     * on laisse remonter l'exception domaine.
+     * Même stratégie de résilience que generateAnnonce() :
+     * tente le modèle primaire, puis le fallback si configuré.
      *
      * @throws GeminiException
      */
@@ -76,7 +76,26 @@ class GeminiService
         $prompt = $this->buildPrompt($annonce);
 
         try {
-            $response = $this->httpClient->request('POST', sprintf(self::STREAM_ENDPOINT, $this->primaryModel), [
+            return $this->doStream($this->primaryModel, $prompt, $topic);
+        } catch (GeminiException $e) {
+            if (null === $this->fallbackModel || '' === $this->fallbackModel) {
+                throw $e;
+            }
+
+            return $this->doStream($this->fallbackModel, $prompt, $topic);
+        }
+    }
+
+    /**
+     * Effectue le streaming SSE pour un modèle donné et publie chaque chunk
+     * sur le topic Mercure. Retourne le texte complet.
+     *
+     * @throws GeminiException
+     */
+    private function doStream(string $model, string $prompt, string $topic): string
+    {
+        try {
+            $response = $this->httpClient->request('POST', sprintf(self::STREAM_ENDPOINT, $model), [
                 'headers' => [
                     'x-goog-api-key' => $this->apiKey,
                     'Accept' => 'text/event-stream',
